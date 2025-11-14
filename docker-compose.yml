@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: survey-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: coding
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./createTables.sql:/docker-entrypoint-initdb.d/01-createTables.sql
+      - ./populate.sql:/docker-entrypoint-initdb.d/02-populate.sql
+    ports:
+      - "5432:5432" # optional, only if you want to connect from host
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ./web-api
+      dockerfile: Dockerfile
+    container_name: survey-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000" # backend accessible from host (optional)
+    # If you want hot reload during dev, you can mount volumes + dev command
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "http://localhost:3000"
+    container_name: survey-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80" # open browser at http://localhost:5173
+
+volumes:
+  postgres-data:
