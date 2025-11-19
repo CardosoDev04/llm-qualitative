@@ -25,7 +25,7 @@ export default function Responses() {
 
     try {
       const allResponses = await getAllCodedResponses();
-      setDisplayedResponses(allResponses);
+      setDisplayedResponses(allResponses.sort((a, b) => a.questionId.localeCompare(b.questionId)));
     } catch (err) {
       console.error(err);
       setError("Failed to fetch responses.");
